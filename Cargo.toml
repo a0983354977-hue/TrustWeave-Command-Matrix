@@ -15,6 +15,9 @@ opt-level = "s"
 strip = true
 panic = "abort"
 
+[workspace.lints.clippy]
+unwrap_used = "allow"
+
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
