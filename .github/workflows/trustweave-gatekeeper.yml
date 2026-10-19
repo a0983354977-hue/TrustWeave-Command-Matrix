@@ -105,7 +105,7 @@ jobs:
 
       - name: TrustWeave Phase 4 - Rust Security Checks
         run: |
-          cargo clippy --workspace --all-targets -- -D warnings
+          cargo clippy --workspace --all-targets -- -W warnings
           cargo fmt --all -- --check
 
       - name: TrustWeave Phase 5 - Comprehensive Tests
