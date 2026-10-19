@@ -56,7 +56,7 @@ jobs:
       - name: Install Nim
         if: runner.os == 'Linux'
         run: |
-          curl -L https://nim-lang.org/choosenim/init.sh -sSf | sh -s - --stable
+          curl -L https://nim-lang.org/choosenim/init.sh -sSf | bash -s -- --stable
           echo "$HOME/.nimble/bin" >> $GITHUB_PATH
       
       - name: Install Nim (Windows)
