@@ -1,0 +1,178 @@
+# TrustWeave Automated Gatekeeper - GitLab CI/CD
+# Fail-fast supply chain verification for production builds
+
+stages:
+  - trustweave-verify
+  - build
+  - test
+  - deploy
+
+variables:
+  CARGO_TERM_COLOR: always
+  TRUSTWEAVE_VERSION: "0.1.0"
+  TRUSTWEAVE_FAIL_FAST: "true"
+
+# ============================================================================
+# TrustWeave Verification Stage - The Automated Gatekeeper
+# ============================================================================
+
+trustweave:deterministic-scan:
+  stage: trustweave-verify
+  image: rust:latest
+  script:
+    - echo "=== TrustWeave Phase 1: Deterministic Source Scan ==="
+    - cargo build --release --package tw-engine
+    - cargo run --release --package tw-engine -- .
+    - echo "Ledger root hash: $(jq -r '.root_hash' tw-ledger.json)"
+  artifacts:
+    paths:
+      - tw-ledger.json
+    expire_in: 30 days
+  only:
+    - merge_requests
+    - main
+    - develop
+
+trustweave:policy-compliance:
+  stage: trustweave-verify
+  image: nimlang/nim:latest
+  script:
+    - echo "=== TrustWeave Phase 2: Policy Compliance Check ==="
+    - apt-get update && apt-get install -y curl
+    - curl -L https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.35.0
+    - export PATH="$HOME/.elan/bin:$PATH"
+    - nim check parsers/tw_parser.nim
+    - nim c -d:release -o:tw_policy_dsl parsers/tw_policy_dsl.nim
+    - ./tw_policy_dsl
+  artifacts:
+    paths:
+      - tw-policy.json
+    expire_in: 30 days
+  only:
+    - merge_requests
+    - main
+    - develop
+
+trustweave:lean-proof:
+  stage: trustweave-verify
+  image: leanprover/lean4:v4.35.0
+  script:
+    - echo "=== TrustWeave Phase 3: Lean 4 Mathematical Proof ==="
+    - lean -o specs/TrustWeave.olean specs/TrustWeave.lean
+    - if [ ! -f specs/TrustWeave.olean ]; then
+        echo "ERROR: Lean 4 proof compilation failed";
+        exit 1;
+      fi
+    - echo "Lean 4 proof certificate generated successfully"
+  artifacts:
+    paths:
+      - specs/TrustWeave.olean
+    expire_in: 30 days
+  only:
+    - merge_requests
+    - main
+    - develop
+
+trustweave:security-checks:
+  stage: trustweave-verify
+  image: rust:latest
+  script:
+    - echo "=== TrustWeave Phase 4: Rust Security Checks ==="
+    - cargo clippy --workspace --all-targets -- -D warnings
+    - cargo fmt --all -- --check
+  allow_failure: false
+  only:
+    - merge_requests
+    - main
+    - develop
+
+trustweave:integrity-verification:
+  stage: trustweave-verify
+  image: rust:latest
+  script:
+    - echo "=== TrustWeave Phase 5: Integrity Verification ==="
+    - cargo test --workspace --verbose
+    - echo "=== TRUSTWEAVE GATEKEEPER: ALL VERIFICATIONS PASSED ==="
+  after_script:
+    - |
+      if [ $? -ne 0 ]; then
+        echo "=== TRUSTWEAVE GATEKEEPER: VERIFICATION FAILED ==="
+        echo "The supply chain integrity check has failed."
+        echo "This merge request cannot be merged until all TrustWeave verifications pass."
+        exit 1
+      fi
+  only:
+    - merge_requests
+    - main
+    - develop
+
+# ============================================================================
+# Build Stage (Only proceeds if TrustWeave verification passes)
+# ============================================================================
+
+build:release:
+  stage: build
+  image: rust:latest
+  script:
+    - echo "=== Building Release Artifacts ==="
+    - cargo build --release --workspace
+  dependencies:
+    - trustweave:deterministic-scan
+    - trustweave:policy-compliance
+    - trustweave:lean-proof
+    - trustweave:security-checks
+    - trustweave:integrity-verification
+  artifacts:
+    paths:
+      - target/release/
+    expire_in: 7 days
+  only:
+    - main
+    - develop
+
+# ============================================================================
+# Test Stage
+# ============================================================================
+
+test:comprehensive:
+  stage: test
+  image: rust:latest
+  script:
+    - echo "=== Running Comprehensive Tests ==="
+    - cargo test --workspace --all-features
+  dependencies:
+    - build:release
+  only:
+    - main
+    - develop
+
+# ============================================================================
+# Deploy Stage (Production deployment with TrustWeave bundle)
+# ============================================================================
+
+deploy:signed-bundle:
+  stage: deploy
+  image: rust:latest
+  script:
+    - echo "=== Creating Signed TrustWeave Bundle ==="
+    - cargo build --release --package tw-engine
+    - lean -o specs/TrustWeave.olean specs/TrustWeave.lean
+    - nim c -d:release -o:tw_policy_dsl parsers/tw_policy_dsl.nim
+    - ./tw_policy_dsl
+    - |
+      cargo run --release --package tw-engine -- bundle \
+        --root . \
+        --policy tw-policy.json \
+        --proof specs/TrustWeave.olean \
+        --artifact target/release/tw-engine \
+        --seed $TRUSTWEAVE_SIGNING_SEED \
+        --output trustweave-bundle.twledger
+  dependencies:
+    - test:comprehensive
+  artifacts:
+    paths:
+      - trustweave-bundle.twledger
+    expire_in: 90 days
+  only:
+    - main
+  when: manual

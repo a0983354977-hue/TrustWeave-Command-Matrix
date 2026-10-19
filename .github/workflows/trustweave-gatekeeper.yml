@@ -1,0 +1,135 @@
+name: TrustWeave Automated Gatekeeper
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  TRUSTWEAVE_VERSION: 0.1.0
+
+jobs:
+  trustweave-verification:
+    name: TrustWeave Supply Chain Verification
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        rust: [stable]
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Install Rust Toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.rust }}
+          override: true
+          components: rustfmt, clippy
+      
+      - name: Cache Cargo Registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+      
+      - name: Cache Cargo Index
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+      
+      - name: Cache Cargo Build
+        uses: actions/cache@v4
+        with:
+          path: target
+          key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
+      
+      - name: Install Nim
+        if: runner.os == 'Linux'
+        run: |
+          curl -L https://nim-lang.org/choosenim/init.sh -sSf | sh -s - --stable
+          echo "$HOME/.nimble/bin" >> $GITHUB_PATH
+      
+      - name: Install Nim (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          choco install nim -y
+          echo "C:\Program Files\Nim\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      
+      - name: Install Lean 4
+        if: runner.os == 'Linux'
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.35.0
+          echo "$HOME/.elan/bin" >> $GITHUB_PATH
+      
+      - name: Install Lean 4 (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          curl -o elan-init.ps1 https://raw.githubusercontent.com/leanprover/elan/master/elan-init.ps1
+          powershell -ExecutionPolicy Bypass -File elan-init.ps1 -y --default-toolchain leanprover/lean4:v4.35.0
+          echo "$env:USERPROFILE\.elan\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      
+      - name: TrustWeave Phase 1 - Deterministic Source Scan
+        run: |
+          cargo build --release --package tw-engine
+          cargo run --release --package tw-engine -- .
+
+      - name: TrustWeave Phase 2 - Policy Compliance Check
+        run: |
+          nim check parsers/tw_parser.nim
+          nim c -d:release -o:tw_policy_dsl parsers/tw_policy_dsl.nim
+          ./tw_policy_dsl
+
+      - name: TrustWeave Phase 3 - Lean 4 Mathematical Proof
+        run: |
+          lean -o specs/TrustWeave.olean specs/TrustWeave.lean
+          if [ ! -f specs/TrustWeave.olean ]; then
+            echo "ERROR: Lean 4 proof compilation failed"
+            exit 1
+          fi
+
+      - name: TrustWeave Phase 4 - Rust Security Checks
+        run: |
+          cargo clippy --workspace --all-targets -- -D warnings
+          cargo fmt --all -- --check
+
+      - name: TrustWeave Phase 5 - Comprehensive Tests
+        run: |
+          cargo test --workspace --verbose
+
+      - name: TrustWeave Fail-Fast - Integrity Verification
+        if: always()
+        run: |
+          if [ $? -ne 0 ]; then
+            echo "=== TRUSTWEAVE GATEKEEPER: VERIFICATION FAILED ==="
+            echo "The supply chain integrity check has failed."
+            echo "This PR cannot be merged until all TrustWeave verifications pass."
+            exit 1
+          fi
+          echo "=== TRUSTWEAVE GATEKEEPER: VERIFICATION PASSED ==="
+          echo "All supply chain integrity checks passed successfully."
+      
+      - name: Upload TrustWeave Ledger
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trustweave-ledger-${{ matrix.os }}
+          path: tw-ledger.json
+          retention-days: 30
+      
+      - name: Upload TrustWeave Policy
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trustweave-policy-${{ matrix.os }}
+          path: tw-policy.json
+          retention-days: 30

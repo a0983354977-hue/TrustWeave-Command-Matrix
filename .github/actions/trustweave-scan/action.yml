@@ -1,0 +1,133 @@
+name: 'TrustWeave Supply Chain Scan'
+description: 'Automated supply chain security verification using TrustWeave'
+author: 'TrustWeave Security Team'
+
+inputs:
+  root:
+    description: 'Root directory to scan for dependencies'
+    required: false
+    default: '.'
+  policy-file:
+    description: 'Path to TrustWeave policy JSON file'
+    required: false
+    default: 'tw-policy.json'
+  fail-on-violation:
+    description: 'Fail the workflow if policy violations are detected'
+    required: false
+    default: 'true'
+  cache-key:
+    description: 'Custom cache key for Cargo/Nim/Lean artifacts'
+    required: false
+    default: 'trustweave-cache'
+
+outputs:
+  ledger-hash:
+    description: 'SHA-256 hash of the generated dependency ledger'
+    value: ${{ steps.trustweave-scan.outputs.ledger-hash }}
+  policy-status:
+    description: 'Policy compliance status (pass/fail)'
+    value: ${{ steps.trustweave-scan.outputs.policy-status }}
+  proof-status:
+    description: 'Lean 4 proof compilation status (pass/fail)'
+    value: ${{ steps.trustweave-scan.outputs.proof-status }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: stable
+        override: true
+    
+    - name: Setup Nim
+      shell: bash
+      run: |
+        if [ "$RUNNER_OS" == "Linux" ]; then
+          curl -L https://nim-lang.org/choosenim/init.sh -sSf | sh -s -- --stable
+          echo "$HOME/.nimble/bin" >> $GITHUB_PATH
+        elif [ "$RUNNER_OS" == "Windows" ]; then
+          choco install nim -y
+          echo "C:\Program Files\Nim\bin" >> $GITHUB_PATH
+        fi
+    
+    - name: Setup Lean 4
+      shell: bash
+      run: |
+        if [ "$RUNNER_OS" == "Linux" ]; then
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.35.0
+          echo "$HOME/.elan/bin" >> $GITHUB_PATH
+        elif [ "$RUNNER_OS" == "Windows" ]; then
+          curl -o elan-init.ps1 https://raw.githubusercontent.com/leanprover/elan/master/elan-init.ps1
+          powershell -ExecutionPolicy Bypass -File elan-init.ps1 -y --default-toolchain leanprover/lean4:v4.35.0
+          echo "$env:USERPROFILE\.elan\bin" >> $GITHUB_PATH
+        fi
+    
+    - name: Cache Dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+          ~/.nimble
+          ~/.elan
+        key: ${{ inputs.cache-key }}-${{ hashFiles('**/Cargo.lock', '**/Cargo.toml') }}
+    
+    - name: Build TrustWeave Engine
+      shell: bash
+      run: |
+        cargo build --release --package tw-engine
+    
+    - name: Execute TrustWeave Scan
+      id: trustweave-scan
+      shell: bash
+      run: |
+        echo "=== TrustWeave Supply Chain Scan ==="
+        echo "Root directory: ${{ inputs.root }}"
+        
+        # Phase 1: Deterministic Source Scan
+        cargo run --release --package tw-engine -- ${{ inputs.root }}
+        LEDGER_HASH=$(jq -r '.root_hash' tw-ledger.json)
+        echo "ledger-hash=$LEDGER_HASH" >> $GITHUB_OUTPUT
+        echo "Ledger hash: $LEDGER_HASH"
+        
+        # Phase 2: Policy Compliance Check
+        if [ -f "${{ inputs.policy-file }}" ]; then
+          nim check parsers/tw_parser.nim
+          nim c -d:release -o:tw_policy_dsl parsers/tw_policy_dsl.nim
+          ./tw_policy_dsl
+          echo "policy-status=pass" >> $GITHUB_OUTPUT
+        else
+          echo "Warning: No policy file found at ${{ inputs.policy-file }}"
+          echo "policy-status=skipped" >> $GITHUB_OUTPUT
+        fi
+        
+        # Phase 3: Lean 4 Proof (if specs exist)
+        if [ -d "specs" ]; then
+          lean -o specs/TrustWeave.olean specs/TrustWeave.lean
+          if [ -f specs/TrustWeave.olean ]; then
+            echo "proof-status=pass" >> $GITHUB_OUTPUT
+          else
+            echo "proof-status=fail" >> $GITHUB_OUTPUT
+            if [ "${{ inputs.fail-on-violation }}" == "true" ]; then
+              echo "ERROR: Lean 4 proof compilation failed"
+              exit 1
+            fi
+          fi
+        else
+          echo "proof-status=skipped" >> $GITHUB_OUTPUT
+        fi
+        
+        echo "=== TrustWeave Scan Complete ==="
+    
+    - name: Upload TrustWeave Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: trustweave-scan-results
+        path: |
+          tw-ledger.json
+          tw-policy.json
+          specs/TrustWeave.olean
+        retention-days: 30

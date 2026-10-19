@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0d1117">
+    <meta name="description" content="TrustWeave Command Matrix desktop control panel">
+    <title>TrustWeave // Command Matrix</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="#" aria-label="TrustWeave Command Matrix home">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 36 36" fill="none">
+              <path d="M18 3.5 31 11v14L18 32.5 5 25V11L18 3.5Z" stroke="currentColor" stroke-width="1.4"/>
+              <path d="m11 17.8 4.2 4.1L25 12.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="18" cy="18" r="2" fill="currentColor"/>
+            </svg>
+          </span>
+          <span class="brand-copy">
+            <strong>TRUSTWEAVE</strong>
+            <span>COMMAND MATRIX <i>v0.1</i></span>
+          </span>
+        </a>
+
+        <div class="topbar-status">
+          <span class="status-pip"></span>
+          <span>LOCAL ENGINE</span>
+          <span class="status-divider"></span>
+          <span class="muted">OFFLINE / PRIVATE</span>
+        </div>
+
+        <div class="topbar-right">
+          <span class="prototype-tag">TAURI CORE</span>
+          <button id="about-button" class="icon-button" type="button" aria-label="About this build">i</button>
+        </div>
+      </header>
+
+      <main>
+        <section class="intro">
+          <div class="eyebrow"><span class="eyebrow-line"></span> TRUST OPERATIONS / 01</div>
+          <h1>Every artifact.<br><span>Accounted for.</span></h1>
+          <p>Drop a project to weave a deterministic ledger and sign a provenance credential, or switch to threat hunting to sweep an artifact through the YARA-X radar.</p>
+        </section>
+
+        <section class="workspace" aria-label="TrustWeave workspace">
+          <div class="workspace-top">
+            <div class="mode-switch" role="tablist" aria-label="Operation mode">
+              <button class="mode-tab active" id="ledger-tab" type="button" role="tab" aria-selected="true" aria-controls="vault-panel" data-mode="ledger">
+                <span class="mode-index">01</span>
+                <span>INTERNAL DEFENSE</span>
+              </button>
+              <button class="mode-tab" id="threat-tab" type="button" role="tab" aria-selected="false" aria-controls="vault-panel" data-mode="threat">
+                <span class="mode-index">02</span>
+                <span>THREAT HUNTING</span>
+                <span class="mode-lock" id="threat-lock" aria-hidden="true">—</span>
+              </button>
+            </div>
+            <div class="workspace-label"><span class="live-dot"></span> VAULT INTERFACE <span class="slash">/</span> <span id="workspace-state">READY</span></div>
+          </div>
+
+          <div class="workspace-grid">
+            <aside class="side-rail" aria-label="Engine status">
+              <div class="rail-heading">SYSTEM STATUS <span>●</span></div>
+              <div class="rail-metric">
+                <span class="metric-label">ENGINE</span>
+                <strong>TW <span id="engine-version">—</span></strong>
+                <small>DETERMINISTIC INGEST</small>
+              </div>
+              <div class="rail-metric">
+                <span class="metric-label">HASH CORE</span>
+                <strong>SHA-256</strong>
+                <small>+ BLAKE3 / PER FILE</small>
+              </div>
+              <div class="rail-metric" id="scanner-metric">
+                <span class="metric-label">YARA SCANNER</span>
+                <strong id="scanner-state">PROBING…</strong>
+                <small id="scanner-note">YARA-X / PURE RUST</small>
+              </div>
+              <div class="rail-metric">
+                <span class="metric-label">SIGNER</span>
+                <strong>ED25519</strong>
+                <small>PROVENANCE ROOT</small>
+              </div>
+              <div class="rail-foot">
+                <span class="rail-foot-mark">⌁</span>
+                <span>DATA STAYS<br>ON THIS DEVICE</span>
+              </div>
+            </aside>
+
+            <div class="vault-column">
+              <div class="vault-stage" id="vault-panel" role="tabpanel" aria-labelledby="ledger-tab">
+                <div class="stage-corner corner-tl"></div>
+                <div class="stage-corner corner-tr"></div>
+                <div class="stage-corner corner-bl"></div>
+                <div class="stage-corner corner-br"></div>
+                <div class="scanline" aria-hidden="true"></div>
+                <div class="stage-topline">
+                  <span id="stage-mode-label">INTERNAL LEDGER</span>
+                  <span id="stage-mode-state">AWAITING INPUT</span>
+                </div>
+
+                <canvas id="merkle-canvas" class="merkle-canvas" aria-hidden="true"></canvas>
+
+                <div class="vault-visual" aria-hidden="true">
+                  <div class="radar">
+                    <span class="radar-sweep"></span>
+                    <span class="radar-pulse p1"></span>
+                    <span class="radar-pulse p2"></span>
+                    <span class="radar-pulse p3"></span>
+                  </div>
+                  <div class="vault-ring ring-outer"></div>
+                  <div class="vault-ring ring-mid"></div>
+                  <div class="vault-ring ring-inner"></div>
+                  <div class="vault-crosshair"></div>
+                  <div class="vault-core">
+                    <svg viewBox="0 0 64 64" fill="none">
+                      <path d="M32 8 52 19.5v25L32 56 12 44.5v-25L32 8Z" stroke="currentColor" stroke-width="1.5"/>
+                      <path d="m24 32 5.5 5.5L41 25" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                      <circle cx="32" cy="32" r="2.5" fill="currentColor"/>
+                    </svg>
+                  </div>
+                  <span class="orbit-node node-one"></span>
+                  <span class="orbit-node node-two"></span>
+                  <span class="orbit-node node-three"></span>
+                </div>
+
+                <div class="threat-markers" id="threat-markers" aria-hidden="true"></div>
+
+                <div class="vault-copy">
+                  <div class="vault-overline" id="vault-overline">THE VAULT <span>·</span> INTERNAL DEFENSE</div>
+                  <h2 id="vault-title">Drop your project</h2>
+                  <p id="vault-description">Weave a deterministic ledger from your source tree and sign a provenance credential. Files are hashed locally; nothing is uploaded.</p>
+                  <div class="drop-hint"><span class="keycap">DROP</span> FOLDER OR FILE HERE <span class="drop-or">OR</span> DRAG IT ONTO THIS WINDOW</div>
+                </div>
+
+                <div class="stage-footer">
+                  <span><i class="footer-spark"></i> HASHING / SHA-256 + BLAKE3</span>
+                  <span id="stage-footer-mid">ROOT / MERKLE-STYLE LEDGER</span>
+                  <span>LOCAL PROCESSING</span>
+                </div>
+
+                <div class="drag-overlay" id="drag-overlay" aria-hidden="true">
+                  <div class="drag-overlay-label" id="drag-overlay-label">RELEASE TO BEGIN</div>
+                </div>
+              </div>
+
+              <section class="result-panel" id="result-panel" aria-live="polite" aria-label="Operation result">
+                <div class="result-heading">
+                  <div><span class="result-pulse"></span> OPERATION FEED</div>
+                  <span id="result-state">STANDBY</span>
+                </div>
+                <div class="result-content" id="result-content">
+                  <span class="feed-time">00:00:00</span>
+                  <span class="feed-message">Awaiting a project folder. The ledger will be generated by the local TrustWeave engine.</span>
+                </div>
+
+                <div class="summary-grid" id="summary-grid" hidden>
+                  <div><span>FILES INDEXED</span><strong id="summary-files">—</strong></div>
+                  <div><span>TOTAL SIZE</span><strong id="summary-size">—</strong></div>
+                  <div class="hash-summary"><span>MERKLE ROOT · SHA-256</span><strong id="summary-hash">—</strong></div>
+                </div>
+
+                <div class="credential-row" id="credential-row" hidden>
+                  <span class="cred-kind" id="cred-kind">—</span>
+                  <span class="cred-path" id="cred-path">—</span>
+                  <button class="copy-button" id="copy-hash" type="button" hidden>
+                    <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="5" y="5" width="8" height="9" rx="1" stroke="currentColor"/><path d="M11 5V3a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h2" stroke="currentColor"/></svg>
+                    <span id="copy-hash-label">COPY HASH</span>
+                  </button>
+                </div>
+
+                <ul class="threat-list" id="threat-list" hidden></ul>
+              </section>
+
+              <section class="terminal" aria-label="Engine console">
+                <div class="terminal-head">
+                  <span>TRUSTWEAVE://CONSOLE</span>
+                  <span id="terminal-status">IDLE</span>
+                </div>
+                <div class="terminal-body" id="terminal-body" role="log" aria-live="polite"></div>
+              </section>
+            </div>
+          </div>
+        </section>
+        <footer class="page-footer">
+          <span>TRUSTWEAVE / SECURE BY VERIFICATION</span>
+          <span id="footer-capability">ENGINE LINKED · SCANNER PROBING</span>
+        </footer>
+      </main>
+
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+      <dialog id="about-dialog">
+        <div class="dialog-top"><span>ABOUT THIS BUILD</span><button id="close-about" type="button" aria-label="Close">×</button></div>
+        <h2>TrustWeave Command Matrix</h2>
+        <p>Every drop is routed straight into the Rust engine over Tauri IPC. Nothing leaves this machine and no verdict is ever simulated.</p>
+        <p><strong>Mode 01 — Internal Defense:</strong> builds a deterministic SHA-256/BLAKE3 ledger, renders the Merkle-DAG, and mints a credential. Projects carrying <code>tw-policy.json</code>, a Lean proof, and a built executable are signed into a full <code>.twledger</code> with Ed25519; otherwise a self-contained ledger credential is written and the Merkle root is copied.</p>
+        <p><strong>Mode 02 — Threat Hunting:</strong> sweeps a file or folder through the pure-Rust YARA-X engine, sweeping a live radar and pinning every matched file with its rule and description.</p>
+      </dialog>
+    </div>
+    <script src="./app.js"></script>
+  </body>
+</html>

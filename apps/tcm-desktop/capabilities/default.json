@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Default permissions for the TrustWeave Command Matrix window",
+  "windows": ["main"],
+  "permissions": ["core:default"]
+}

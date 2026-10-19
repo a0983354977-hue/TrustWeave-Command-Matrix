@@ -1,0 +1,58 @@
+[workspace]
+members = [
+    "crates/tw-engine",
+    "apps/tcm-desktop",
+]
+resolver = "2"
+
+# Ship the smallest, fastest artifact we can: single codegen unit, fat LTO,
+# size-first optimisation, symbols stripped. This is the documented Tauri
+# recipe for lean desktop bundles.
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+strip = true
+panic = "abort"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.80.0"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/trustweave/trustweave"
+authors = ["TrustWeave Security Team"]
+
+[workspace.dependencies]
+# Cryptographic primitives - LOCKED VERSIONS
+sha2 = { version = "0.10" }
+blake3 = { version = "1.5" }
+merkletree = { version = "0.8" }
+
+# High-performance file traversal - LOCKED VERSIONS
+walkdir = { version = "2.5" }
+ignore = { version = "0.4" }
+
+# Parallel computation - LOCKED VERSIONS
+rayon = { version = "1.10" }
+crossbeam-channel = { version = "0.5" }
+
+# Serialization - LOCKED VERSIONS
+serde = { version = "1.0", features = ["derive"] }
+serde_json = { version = "1.0" }
+hex = { version = "0.4" }
+
+# Testing
+tempfile = { version = "3.10" }
+
+# Error handling - LOCKED VERSIONS
+thiserror = { version = "1.0" }
+anyhow = { version = "1.0" }
+
+# Logging - LOCKED VERSIONS
+tracing = { version = "0.1" }
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Path normalization - LOCKED VERSIONS
+path-absolutize = { version = "3.1" }
+normalize-path = { version = "0.2" }

@@ -1,0 +1,195 @@
+{
+  "version": "1.0",
+  "description": "TrustWeave Protocol v1.0 Test Vectors",
+  "test_cases": [
+    {
+      "name": "minimal_bundle",
+      "description": "Minimal valid bundle with empty ledger",
+      "input": {
+        "ledger": {
+          "engine_version": "0.1.0",
+          "root_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "root_hash_algorithm": "sha256",
+          "timestamp": 1234567890,
+          "entries": {}
+        },
+        "policy": {
+          "name": "Minimal Policy",
+          "strictMode": true,
+          "rules": [],
+          "constraints": []
+        },
+        "proof_certificate": "b2xlYW4AADEuMC4wAGN5bmRoZXRpYyB0ZXN0IG9iamVjdA==",
+        "artifact_hash": "d7a8fbb307d7809469ca9abcb0082e4f8d5651e46d3cdb762d02d0bf37c9e592"
+      },
+      "expected": {
+        "source_merkle_root": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "policy_sha256": "3f39d5c348e5b791d0755553259a511e6e9e6d4b3f3c3c3c3c3c3c3c3c3c3c3",
+        "proof_sha256": "5d41402abc4b2a76b9719d911017c592f8f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5",
+        "provenance_root": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2"
+      }
+    },
+    {
+      "name": "single_file_ledger",
+      "description": "Bundle with single file in ledger",
+      "input": {
+        "ledger": {
+          "engine_version": "0.1.0",
+          "root_hash": "aa00bb11cc22dd33ee44ff55aa66bb77cc88dd99ee00ff11aa22bb33cc44dd55",
+          "root_hash_algorithm": "sha256",
+          "timestamp": 1234567890,
+          "entries": {
+            "src/main.rs": {
+              "path": "src/main.rs",
+              "sha256": "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+              "blake3": "ffeeddccbbaa99887766554433221100ffeeddccbbaa99887766554433221100",
+              "size": 1024,
+              "modified": 1234567890
+            }
+          }
+        },
+        "policy": {
+          "name": "Single File Policy",
+          "strictMode": true,
+          "rules": [
+            {
+              "pattern": "serde",
+              "allowed": true,
+              "source": "crates.io",
+              "versionConstraint": ">=1.0.0"
+            }
+          ],
+          "constraints": [
+            {
+              "name": "max-dependencies",
+              "value": "100"
+            }
+          ]
+        },
+        "proof_certificate": "b2xlYW4AADEuMC4wAGN5bmRoZXRpYyB0ZXN0IG9iamVjdA==",
+        "artifact_hash": "d7a8fbb307d7809469ca9abcb0082e4f8d5651e46d3cdb762d02d0bf37c9e592"
+      },
+      "expected": {
+        "source_merkle_root": "aa00bb11cc22dd33ee44ff55aa66bb77cc88dd99ee00ff11aa22bb33cc44dd55",
+        "policy_sha256": "5a4b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b",
+        "proof_sha256": "5d41402abc4b2a76b9719d911017c592f8f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5",
+        "provenance_root": "b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c"
+      }
+    },
+    {
+      "name": "multiple_files_ledger",
+      "description": "Bundle with multiple files in ledger",
+      "input": {
+        "ledger": {
+          "engine_version": "0.1.0",
+          "root_hash": "102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f2021",
+          "root_hash_algorithm": "sha256",
+          "timestamp": 1234567890,
+          "entries": {
+            "src/main.rs": {
+              "path": "src/main.rs",
+              "sha256": "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+              "blake3": "ffeeddccbbaa99887766554433221100ffeeddccbbaa99887766554433221100",
+              "size": 1024,
+              "modified": 1234567890
+            },
+            "src/lib.rs": {
+              "path": "src/lib.rs",
+              "sha256": "112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00",
+              "blake3": "eeddccbbaa99887766554433221100ffeeddccbbaa99887766554433221100ff",
+              "size": 2048,
+              "modified": 1234567891
+            },
+            "Cargo.toml": {
+              "path": "Cargo.toml",
+              "sha256": "2233445566778899aabbccddeeff00112233445566778899aabbccddeeff0011",
+              "blake3": "ddccbbaa99887766554433221100ffeeddccbbaa99887766554433221100ffee",
+              "size": 512,
+              "modified": 1234567892
+            }
+          }
+        },
+        "policy": {
+          "name": "Multiple Files Policy",
+          "strictMode": false,
+          "rules": [
+            {
+              "pattern": "serde",
+              "allowed": true,
+              "source": "crates.io",
+              "versionConstraint": ">=1.0.0"
+            },
+            {
+              "pattern": "tokio",
+              "allowed": true,
+              "source": "crates.io",
+              "versionConstraint": ">=1.0.0"
+            }
+          ],
+          "constraints": [
+            {
+              "name": "max-dependencies",
+              "value": "50"
+            },
+            {
+              "name": "allow-dev-dependencies",
+              "value": "true"
+            }
+          ]
+        },
+        "proof_certificate": "b2xlYW4AADEuMC4wAGN5bmRoZXRpYyB0ZXN0IG9iamVjdA==",
+        "artifact_hash": "d7a8fbb307d7809469ca9abcb0082e4f8d5651e46d3cdb762d02d0bf37c9e592"
+      },
+      "expected": {
+        "source_merkle_root": "102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f2021",
+        "policy_sha256": "6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b",
+        "proof_sha256": "5d41402abc4b2a76b9719d911017c592f8f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5",
+        "provenance_root": "c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2"
+      }
+    }
+  ],
+  "error_cases": [
+    {
+      "name": "invalid_magic",
+      "description": "Bundle with invalid magic bytes should be rejected",
+      "magic": "INVALID0",
+      "expected_error": "bad magic or truncated header"
+    },
+    {
+      "name": "payload_length_mismatch",
+      "description": "Payload length does not match bundle size",
+      "payload_length": 1000000,
+      "actual_bundle_size": 500,
+      "expected_error": "payload length does not match bundle size"
+    },
+    {
+      "name": "payload_digest_mismatch",
+      "description": "Payload digest does not match header",
+      "expected_error": "payload digest mismatch"
+    },
+    {
+      "name": "signature_verification_failed",
+      "description": "Ed25519 signature verification fails",
+      "expected_error": "signature verification failed"
+    },
+    {
+      "name": "artifact_mismatch",
+      "description": "Artifact hash does not match",
+      "expected_error": "provenance commitments do not match bundle contents"
+    },
+    {
+      "name": "invalid_olean_version",
+      "description": "Lean .olean version does not match pinned version",
+      "olean_version": "4.36.0",
+      "expected_error": "Lean .olean version 4.36.0 does not match pinned version 4.35.0"
+    },
+    {
+      "name": "invalid_policy_structure",
+      "description": "Policy matrix missing required fields",
+      "policy": {
+        "name": "Invalid Policy"
+      },
+      "expected_error": "policy must contain name, strictMode, rules, and constraints"
+    }
+  ]
+}

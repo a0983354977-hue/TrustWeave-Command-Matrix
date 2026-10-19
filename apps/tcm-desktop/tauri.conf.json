@@ -1,0 +1,33 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "TrustWeave Command Matrix",
+  "version": "0.1.0",
+  "identifier": "io.trustweave.command-matrix",
+  "build": {
+    "frontendDist": "../command-matrix"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "title": "TrustWeave Command Matrix",
+        "width": 1440,
+        "height": 960,
+        "minWidth": 960,
+        "minHeight": 720,
+        "resizable": true,
+        "backgroundColor": "#0d1117"
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src ipc: http://ipc.localhost"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "category": "DeveloperTool",
+    "shortDescription": "TrustWeave security control panel prototype",
+    "longDescription": "A desktop interface for deterministic TrustWeave project inventory and security workflow prototyping."
+  }
+}

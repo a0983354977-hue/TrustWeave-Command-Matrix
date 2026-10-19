@@ -1,0 +1,68 @@
+# 編譯產物與暫存檔 (Build Products)
+/target/
+/dist/
+/node_modules/
+/bin/
+/out/
+*.exe
+*.dll
+*.so
+*.dylib
+*.pdb
+*.msi
+*.app
+*.dmg
+*.deb
+*.rpm
+*.AppImage
+
+# Rust / Cargo
+**/*.rs.bk
+Cargo.lock
+
+# Nim build artifacts
+parsers/*.exe
+parsers/*.nim.c
+parsers/*.nim.h
+parsers/nimcache/
+parsers/*.nimble
+
+# Lean build artifacts
+*.olean
+*.ilean
+
+# IDE 與系統暫存檔 (Editor & OS Junk)
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+
+# 個人憑證與金鑰 (Secrets & Local Credentials - 絕對不能上傳)
+*.twcred.json
+*.pem
+*.key
+*.seed
+*.priv
+.env
+.env.*
+*.crt
+*.csr
+*.srl
+
+# TrustWeave specific
+.twledger
+*.twledger
+tw-ledger.json
+tw-policy.json
+.signing-key
+signer.seed
+signer.pub
+
+# Tauri build outputs
+src-tauri/target/
+src-tauri/Cargo.lock
